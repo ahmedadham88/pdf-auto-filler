@@ -16,7 +16,11 @@ libraryDependencies ++= {
     "com.typesafe.akka" %% "akka-http-experimental" % akkaV,
     "com.typesafe.akka" %% "akka-http-spray-json-experimental" % akkaV,
     "com.typesafe.akka" %% "akka-http-testkit" % akkaV,
-    "org.scalatest"     %% "scalatest" % scalaTestV % "test"
+    "org.scalatest"     %% "scalatest" % scalaTestV % "test",
+    jdbc,
+    cache,
+    "org.postgresql" % "postgresql" % "9.4-1201-jdbc41",
+    ws
   )
 }
 

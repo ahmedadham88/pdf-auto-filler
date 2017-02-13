@@ -1,10 +1,10 @@
 import akka.actor.ActorSystem
-import akka.event.{LoggingAdapter, Logging}
+import akka.event.{Logging, LoggingAdapter}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
-import akka.http.scaladsl.model.{HttpResponse, HttpRequest}
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.unmarshalling.Unmarshal
@@ -13,6 +13,14 @@ import akka.stream.scaladsl.{Flow, Sink, Source}
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import java.io.IOException
+
+import akka.http.scaladsl.model.HttpHeader.ParsingResult.Ok
+import play.api._
+import play.api.mvc._
+import play.api.cache.Cache
+import play.api.Play.current
+import play.api.db._
+
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.math._
 import spray.json.DefaultJsonProtocol
@@ -22,6 +30,8 @@ case class IpInfo(query: String, country: Option[String], city: Option[String], 
 case class IpPairSummaryRequest(ip1: String, ip2: String)
 
 case class IpPairSummary(distance: Option[Double], ip1Info: IpInfo, ip2Info: IpInfo)
+
+case class SampleDB(result: String, msg: String = "DB Response: ")
 
 object IpPairSummary {
   def apply(ip1Info: IpInfo, ip2Info: IpInfo): IpPairSummary = IpPairSummary(calculateDistance(ip1Info, ip2Info), ip1Info, ip2Info)
@@ -48,6 +58,7 @@ trait Protocols extends DefaultJsonProtocol {
   implicit val ipInfoFormat = jsonFormat5(IpInfo.apply)
   implicit val ipPairSummaryRequestFormat = jsonFormat2(IpPairSummaryRequest.apply)
   implicit val ipPairSummaryFormat = jsonFormat3(IpPairSummary.apply)
+  implicit val sampleDBFormat = jsonFormat2(SampleDB.apply)
 }
 
 trait Service extends Protocols {
@@ -77,8 +88,32 @@ trait Service extends Protocols {
     }
   }
 
+  def db: Future[SampleDB] = {
+    var out = ""
+    val conn = DB.getConnection()
+    try {
+      val stmt = conn.createStatement
+      stmt.executeUpdate("CREATE TABLE IF NOT EXISTS ticks (tick timestamp)")
+      stmt.executeUpdate("INSERT INTO ticks VALUES (now())")
+
+      val rs = stmt.executeQuery("SELECT tick FROM ticks")
+
+      while (rs.next) {
+        out += "Read from DB: " + rs.getTimestamp("tick") + "\n"
+      }
+    } finally {
+      conn.close()
+    }
+    Unmarshal(SampleDB(out)).to[SampleDB]
+  }
+
   val routes = {
     logRequestResult("akka-http-microservice") {
+      pathPrefix("info") {
+        get {
+          complete(s"Welcome to the PDF Automatic Filler Application \n Available endpoints are: \n /ip \n /db")
+        }
+      } ~
       pathPrefix("ip") {
         (get & path(Segment)) { ip =>
           complete {
@@ -98,6 +133,11 @@ trait Service extends Protocols {
               case (_, Left(errorMessage)) => BadRequest -> errorMessage
             }
           }
+        }
+      } ~
+      pathPrefix("db") {
+        get {
+          complete(db)
         }
       }
     }
