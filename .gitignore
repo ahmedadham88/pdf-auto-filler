@@ -1,0 +1,47 @@
+*.class
+*.log
+
+bin/
+libexec/
+
+# sbt specific
+.cache
+.history
+.lib/
+dist/*
+target/
+lib_managed/
+src_managed/
+project/boot/
+project/plugins/project/
+
+# Scala-IDE specific
+.scala_dependencies
+.worksheet
+
+# IntelliJ specific
+.idea
+
+#SBT
+target
+project/target
+project/project
+
+# Mac
+.DS_Store
+
+# Eclipse
+.classpath
+.launch
+.metadata
+.project
+.scala_dependencies
+.settings
+
+# IntelliJ
+.idea
+.idea_modules
+*.iml
+*.ipr
+*.iws
+.history
