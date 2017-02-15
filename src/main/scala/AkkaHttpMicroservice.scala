@@ -14,13 +14,6 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import java.io.IOException
 
-import akka.http.scaladsl.model.HttpHeader.ParsingResult.Ok
-import play.api._
-import play.api.mvc._
-import play.api.cache.Cache
-import play.api.Play.current
-import play.api.db._
-
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.math._
 import spray.json.DefaultJsonProtocol
@@ -88,32 +81,8 @@ trait Service extends Protocols {
     }
   }
 
-  def db: Future[SampleDB] = {
-    var out = ""
-    val conn = DB.getConnection()
-    try {
-      val stmt = conn.createStatement
-      stmt.executeUpdate("CREATE TABLE IF NOT EXISTS ticks (tick timestamp)")
-      stmt.executeUpdate("INSERT INTO ticks VALUES (now())")
-
-      val rs = stmt.executeQuery("SELECT tick FROM ticks")
-
-      while (rs.next) {
-        out += "Read from DB: " + rs.getTimestamp("tick") + "\n"
-      }
-    } finally {
-      conn.close()
-    }
-    Unmarshal(SampleDB(out)).to[SampleDB]
-  }
-
   val routes = {
     logRequestResult("akka-http-microservice") {
-      pathPrefix("info") {
-        get {
-          complete(s"Welcome to the PDF Automatic Filler Application \n Available endpoints are: \n /ip \n /db")
-        }
-      } ~
       pathPrefix("ip") {
         (get & path(Segment)) { ip =>
           complete {
@@ -135,9 +104,9 @@ trait Service extends Protocols {
           }
         }
       } ~
-      pathPrefix("db") {
+      pathSingleSlash {
         get {
-          complete(db)
+          complete(s"Welcome to the PDF Automatic Filler Application \n Available endpoints are: \n /ip \n /db")
         }
       }
     }
