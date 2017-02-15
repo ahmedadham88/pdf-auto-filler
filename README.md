@@ -3,4 +3,4 @@ Given a template and target pdf files, this project is about to autofill the tar
 
 ### Online link:
 
-[Click here](https://afternoon-plateau-38675.herokuapp.com/info)
+[Click here](https://afternoon-plateau-38675.herokuapp.com/)
